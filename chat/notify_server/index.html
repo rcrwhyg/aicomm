@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>SSE handler</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <!-- <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
+    <script src='main.js'></script> -->
+</head>
+
+<body>
+    <h1>Server Sent Events</h1>
+    <script lang="javascript">
+        let token = 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Mjg4ODMwNTcsImV4cCI6MTcyOTQ4Nzg1NywibmJmIjoxNzI4ODgzMDU3LCJpc3MiOiJjaGF0X3NlcnZlciIsImF1ZCI6ImNoYXRfd2ViIiwiaWQiOjEsIndzX2lkIjoxLCJmdWxsX25hbWUiOiJ0ZXN0IiwiZW1haWwiOiJ0Y2hlbkBhY21lLm9yZyIsImNyZWF0ZWRfYXQiOiIyMDI0LTEwLTE0VDA1OjE0OjI0LjYzNDU1MVoifQ.erYL2IK4SmoPnoXwQXf8-8G84u7rT_G784H7xbBcfPuNWmX-SRXvSobDWl8cKAVqEBtz02FNY8w1vUsE33u0Bw'
+        let source = new EventSource(`/events?token=${token}`);
+        source.onmessage = function (event) {
+            console.log("Got: ", event.data);
+        };
+
+        source.addEventListener('NewChat', function (e) {
+            console.log("NewChat: ", e.data);
+        }, false);
+
+        source.addEventListener('AddToChat', function (e) {
+            console.log("AddToChat: ", e.data);
+        }, false);
+
+        source.addEventListener('RemoveFromChat', function (e) {
+            console.log("RemoveFromChat: ", e.data);
+        }, false);
+
+        source.addEventListener('NewMessage', function (e) {
+            console.log("NewMessage: ", e.data);
+        }, false);
+    </script>
+</body>
+
+</html>

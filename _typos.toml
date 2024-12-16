@@ -1,0 +1,12 @@
+[default.extend-words]
+
+[files]
+extend-exclude = [
+    "CHANGELOG.md",
+    "notebooks/*",
+    ".vscode/*",
+    ".gitignore",
+    "chat/chat_server/fixtures/*",
+    "chat/chat_core/fixtures/*",
+    "chat/notify_server/*.html",
+]

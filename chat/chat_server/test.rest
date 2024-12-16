@@ -1,0 +1,171 @@
+### signup user
+POST http://localhost:6688/api/signup
+Content-Type: application/json
+
+{
+    "workspace": "acme",
+    "full_name": "Tyr Chen",
+    "email": "tchen@acme.org",
+    "password": "123456"
+}
+
+### signup user
+POST http://localhost:6688/api/signup
+Content-Type: application/json
+
+{
+    "workspace": "acme",
+    "full_name": "Alice Chen",
+    "email": "alice@acme.org",
+    "password": "123456"
+}
+
+### signup user
+POST http://localhost:6688/api/signup
+Content-Type: application/json
+
+{
+    "workspace": "acme",
+    "full_name": "Bob Hua",
+    "email": "bob@acme.org",
+    "password": "123456"
+}
+
+### signin user (valid)
+POST http://localhost:6688/api/signin
+Content-Type: application/json
+
+{
+    "email": "tchen@acme.org",
+    "password": "a123456"
+}
+
+### signin user
+# @name signin
+POST http://localhost:6688/api/signin
+Content-Type: application/json
+
+{
+    "email": "tchen@acme.org",
+    "password": "123456"
+}
+
+@token = {{signin.response.body.token}}
+
+### signin user
+# @name signin1
+POST http://localhost:6688/api/signin
+Content-Type: application/json
+
+{
+    "email": "bob@acme.org",
+    "password": "123456"
+}
+
+@token1 = {{signin1.response.body.token}}
+
+### create chat
+POST http://localhost:6688/api/chats
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": "project X",
+    "members": [1, 2],
+    "public": false
+}
+
+### create direct chat
+POST http://localhost:6688/api/chats
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "members": [1, 2],
+    "public": false
+}
+
+### create chat without me
+POST http://localhost:6688/api/chats
+Content-Type: application/json
+Authorization: Bearer {{token1}}
+
+{
+    "name": "project Y",
+    "members": [2, 3],
+    "public": false
+}
+
+### create direct chat without me
+POST http://localhost:6688/api/chats
+Content-Type: application/json
+Authorization: Bearer {{token1}}
+
+{
+    "members": [2, 3],
+    "public": false
+}
+
+### get chat list
+GET http://localhost:6688/api/chats
+Authorization: Bearer {{token}}
+
+### get user list
+GET http://localhost:6688/api/users
+Authorization: Bearer {{token}}
+
+
+### update chat
+PATCH http://localhost:6688/api/chats/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "type": "Group",
+    "name": "acme-updated",
+    "members": [1, 2, 3]
+}
+
+### delete chat
+DELETE http://localhost:6688/api/chats/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### upload files
+POST http://localhost:6688/api/upload
+Content-Type: multipart/form-data; boundary=MyBoundary
+Authorization: Bearer {{token}}
+
+--MyBoundary
+# Content-Disposition: form-data; filename="006Mi9iRgy1gwj6z72ccdj30fm0feq56.jpg"
+Content-Disposition: form-data; filename="IMG_8812.jpeg"
+Content-Type: application/octet-stream
+
+< C:\Users\velis\Desktop\biaoqingbao\006Mi9iRgy1gwj6z72ccdj30fm0feq56.jpg
+# < /Users/alon/Pictures/IMG_8812.jpeg
+--MyBoundary
+Content-Disposition: form-data; filename="hello.txt"
+Content-Type: text/plain
+
+Hello, World!
+--MyBoundary--
+
+### get files
+# GET http://localhost:6688/api/files/1/08e/151/881c920d87e043aacb890479ae0bef522f.jpeg
+GET http://localhost:6688/api/files/1/dfb/d31/a22376042aef61b5df0c538dbc8f0031b9.jpeg
+# GET http://localhost:6688/api/files/1/0a0/a9f/2a6772942557ab5355d76af442f8f65e01.txt
+Authorization: Bearer {{token}}
+
+### send a message
+POST http://localhost:6688/api/chats/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "content": "hello world",
+    "files": []
+}
+
+### get messages
+GET http://localhost:6688/api/chats/1/messages?limit=6&last_id=5
+Authorization: Bearer {{token}}

@@ -1,7 +1,6 @@
 use axum::{
-    http::{self, StatusCode},
-    response::{IntoResponse, Response},
-    Json,
+    http::StatusCode,
+    response::{IntoResponse, Json, Response},
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -41,11 +40,11 @@ pub enum AppError {
     #[error("password hash error: {0}")]
     PasswordHashError(#[from] argon2::password_hash::Error),
 
-    #[error("jwt error: {0}")]
-    JwtError(#[from] jwt_simple::Error),
+    #[error("general error: {0}")]
+    AnyError(#[from] anyhow::Error),
 
     #[error("http header parse error: {0}")]
-    HttpHeaderError(#[from] http::header::InvalidHeaderValue),
+    HttpHeaderError(#[from] axum::http::header::InvalidHeaderValue),
 }
 
 impl ErrorOutput {
@@ -68,7 +67,7 @@ impl IntoResponse for AppError {
             Self::IoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             Self::SqlxError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             Self::PasswordHashError(_) => StatusCode::UNPROCESSABLE_ENTITY,
-            Self::JwtError(_) => StatusCode::FORBIDDEN,
+            Self::AnyError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             Self::HttpHeaderError(_) => StatusCode::UNPROCESSABLE_ENTITY,
         };
 

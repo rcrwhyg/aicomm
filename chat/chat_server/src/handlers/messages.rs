@@ -4,11 +4,11 @@ use axum::{
     response::IntoResponse,
     Extension, Json,
 };
-use chat_core::{Message, User};
 use tokio::fs::{self};
 use tracing::{info, warn};
 
 use crate::{AppError, AppState, ChatFile, CreateMessage, ErrorOutput, ListMessages};
+use chat_core::{Message, User};
 
 /// Send a new message in the chat.
 #[utoipa::path(

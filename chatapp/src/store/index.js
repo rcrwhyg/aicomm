@@ -1,7 +1,9 @@
 import { createStore } from "vuex";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
-import { getUrlBase, initSse } from "../utils";
+import { getUrlBase } from "../utils";
+import { initSSE } from "../utils";
+import { formatMessageDate } from "../utils"; // Add this import
 
 export default createStore({
   state: {
@@ -10,12 +12,12 @@ export default createStore({
     workspace: {}, // Current workspace
     channels: [], // List of channels
     messages: {}, // Messages hashmap, keyed by channel ID
-    users: {}, // Users hashmap under the current workspace, keyed by user ID
+    users: {}, // Users hashmap under workspace, keyed by user ID
     activeChannel: null,
     sse: null,
   },
   mutations: {
-    setSse(state, sse) {
+    setSSE(state, sse) {
       state.sse = sse;
     },
     setUser(state, user) {
@@ -34,85 +36,88 @@ export default createStore({
       state.users = users;
     },
     setMessages(state, { channelId, messages }) {
-      state.messages[channelId] = messages;
-    },
-    setMessagesForChannel(state, { channelId, messages }) {
-      state.messages[channelId] = messages;
-    },
-    setActiveChannel(state, channelId) {
-      const channel = state.channels.find(
-        (channel) => channel.id === channelId
-      );
-      state.activeChannel = channel;
+      // Format the date for each message before setting them in the state
+      const formattedMessages = messages.map((message) => ({
+        ...message,
+        formattedCreatedAt: formatMessageDate(message.createdAt),
+      }));
+      state.messages[channelId] = formattedMessages.reverse();
     },
     addChannel(state, channel) {
       state.channels.push(channel);
-      state.messages[channel.id] = [];
+      state.messages[channel.id] = []; // Initialize message list for the new channel
     },
     addMessage(state, { channelId, message }) {
       if (state.messages[channelId]) {
-        // we should prepend the message to the list
-        state.messages[channelId].unshift(message);
+        // Format the message date before adding it to the state
+        message.formattedCreatedAt = formatMessageDate(message.createdAt);
+        state.messages[channelId].push(message);
       } else {
+        message.formattedCreatedAt = formatMessageDate(message.createdAt);
         state.messages[channelId] = [message];
       }
     },
+    setActiveChannel(state, channelId) {
+      const channel = state.channels.find((c) => c.id === channelId);
+      state.activeChannel = channel;
+    },
     loadUserState(state) {
-      const user = localStorage.getItem("user");
-      const token = localStorage.getItem("token");
-      const workspace = localStorage.getItem("workspace");
-      const channels = localStorage.getItem("channels");
+      const storedUser = localStorage.getItem("user");
+      const storedToken = localStorage.getItem("token");
+      const storedWorkspace = localStorage.getItem("workspace");
+      const storedChannels = localStorage.getItem("channels");
       // we do not store messages in local storage, so this is always empty
-      const messages = localStorage.getItem("messages");
-      const users = localStorage.getItem("users");
+      const storedMessages = localStorage.getItem("messages");
+      const storedUsers = localStorage.getItem("users");
 
-      if (user) {
-        state.user = JSON.parse(user);
+      if (storedUser) {
+        state.user = JSON.parse(storedUser);
       }
-      if (token) {
-        state.token = token;
+      if (storedToken) {
+        state.token = storedToken;
       }
-      if (workspace) {
-        state.workspace = JSON.parse(workspace);
+      if (storedWorkspace) {
+        state.workspace = JSON.parse(storedWorkspace);
       }
-      if (channels) {
-        state.channels = JSON.parse(channels);
+      if (storedChannels) {
+        state.channels = JSON.parse(storedChannels);
       }
-      if (messages) {
-        state.messages = JSON.parse(messages);
+      if (storedMessages) {
+        state.messages = JSON.parse(storedMessages);
       }
-      if (users) {
-        state.users = JSON.parse(users);
+      if (storedUsers) {
+        state.users = JSON.parse(storedUsers);
       }
     },
   },
   actions: {
-    initSse({ state, commit }) {
+    initSSE({ state, commit }) {
       if (state.sse) {
         state.sse.close();
       }
-      const sse = initSse(this);
-      commit("setSse", sse);
+      const sse = initSSE(this);
+      commit("setSSE", sse);
     },
-    closeSse({ state, commit }) {
+    closeSSE({ state, commit }) {
       if (state.sse) {
         state.sse.close();
-        commit("setSse", null);
+        commit("setSSE", null);
       }
     },
-    async signup({ state, commit }, { workspace, full_name, email, password }) {
+    async signup({ commit }, { email, fullname, password, workspace }) {
       try {
         const response = await axios.post(`${getUrlBase()}/signup`, {
-          workspace,
-          full_name,
           email,
+          fullname,
           password,
+          workspace,
         });
 
         const user = await loadState(response, this, commit);
+
         return user;
       } catch (error) {
-        console.error("Signup failed", error);
+        console.error("Signup failed:", error);
         throw error;
       }
     },
@@ -126,7 +131,7 @@ export default createStore({
         const user = await loadState(response, this, commit);
         return user;
       } catch (error) {
-        console.error("Signin failed", error);
+        console.error("Login failed:", error);
         throw error;
       }
     },
@@ -144,8 +149,8 @@ export default createStore({
       commit("setChannels", []);
       commit("setMessages", {});
 
-      // close sse
-      this.dispatch("closeSse");
+      // close SSE
+      this.dispatch("closeSSE");
     },
     setActiveChannel({ commit }, channel) {
       commit("setActiveChannel", channel);
@@ -174,15 +179,43 @@ export default createStore({
           let messages = response.data;
           // messages = messages.map((message) => {
           //   const user = state.users[message.senderId];
-          //   return { ...message, sender: user };
-          // });
+          //   return {
+          //     ...message,
+          //     sender: user,
+          //   };
+          // } );
           commit("setMessages", { channelId, messages });
         } catch (error) {
           console.error(
-            `Failed to fetch messages for channel ${channelId}`,
+            `Failed to fetch messages for channel ${channelId}:`,
             error
           );
         }
+      }
+    },
+    async uploadFiles({ state, commit }, files) {
+      try {
+        const formData = new FormData();
+        files.forEach((file) => {
+          formData.append(`files`, file);
+        });
+
+        const response = await axios.post(`${getUrlBase()}/upload`, formData, {
+          headers: {
+            Authorization: `Bearer ${state.token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        });
+
+        const uploadedFiles = response.data.map((path) => ({
+          path,
+          fullUrl: `${getUrlBase()}${path}?token=${state.token}`,
+        }));
+
+        return uploadedFiles;
+      } catch (error) {
+        console.error("Failed to upload files:", error);
+        throw error;
       }
     },
     async sendMessage({ state, commit }, payload) {
@@ -192,18 +225,14 @@ export default createStore({
           payload,
           {
             headers: {
-              Authorization: `Bearer ${this.state.token}`,
+              Authorization: `Bearer ${state.token}`,
             },
           }
         );
-
-        console.log("Message sent", response.data);
-        commit("addMessage", {
-          channelId: payload.chatId,
-          message: response.data,
-        });
+        console.log("Message sent:", response.data);
+        // commit('addMessage', { channelId: payload.chatId, message: response.data });
       } catch (error) {
-        console.error("Failed to send message", error);
+        console.error("Failed to send message:", error);
         throw error;
       }
     },
@@ -212,10 +241,9 @@ export default createStore({
     },
     loadUserState({ commit }) {
       commit("loadUserState");
-
-      // if user is already logged in, then init sse
+      // if user is already logged in, then init SSE
       if (this.state.token) {
-        this.dispatch("initSse");
+        this.dispatch("initSSE");
       }
     },
   },
@@ -236,13 +264,14 @@ export default createStore({
       // filter out channels that type == 'single'
       return state.channels.filter((channel) => channel.type !== "single");
     },
-    getSingleChannels(state) {
+    getSingChannels(state) {
       const channels = state.channels.filter(
         (channel) => channel.type === "single"
       );
-      // return channel member that is not the current user
+      // return channel member that is not myself
       return channels.map((channel) => {
-        const id = channel.members.find((id) => id !== state.user.id);
+        let members = channel.members;
+        const id = members.find((id) => id !== state.user.id);
         channel.recipient = state.users[id];
         return channel;
       });
@@ -261,7 +290,7 @@ export default createStore({
 
 async function loadState(response, self, commit) {
   const token = response.data.token;
-  const user = jwtDecode(token);
+  const user = jwtDecode(token); // Decode the JWT to get user info
   const workspace = { id: user.wsId, name: user.wsName };
 
   try {
@@ -273,8 +302,8 @@ async function loadState(response, self, commit) {
     });
     const users = usersResp.data;
     const usersMap = {};
-    users.forEach((user) => {
-      usersMap[user.id] = user;
+    users.forEach((u) => {
+      usersMap[u.id] = u;
     });
 
     // fetch all my channels
@@ -285,24 +314,26 @@ async function loadState(response, self, commit) {
     });
     const channels = chatsResp.data;
 
+    // Store user info, token, and workspace in localStorage
     localStorage.setItem("user", JSON.stringify(user));
     localStorage.setItem("token", token);
     localStorage.setItem("workspace", JSON.stringify(workspace));
     localStorage.setItem("users", JSON.stringify(usersMap));
     localStorage.setItem("channels", JSON.stringify(channels));
 
+    // Commit the mutations to update the state
     commit("setUser", user);
     commit("setToken", token);
     commit("setWorkspace", workspace);
     commit("setChannels", channels);
     commit("setUsers", usersMap);
 
-    // call initSse action
-    await self.dispatch("initSse");
+    // call initSSE action
+    await self.dispatch("initSSE");
 
     return user;
   } catch (error) {
-    console.error("Failed to load user state", error);
+    console.error("Failed to load user state:", error);
     throw error;
   }
 }

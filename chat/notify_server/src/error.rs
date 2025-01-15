@@ -1,4 +1,5 @@
 use axum::{
+    body::Body,
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
@@ -29,7 +30,7 @@ impl ErrorOutput {
 }
 
 impl IntoResponse for AppError {
-    fn into_response(self) -> Response {
+    fn into_response(self) -> Response<Body> {
         let status = match &self {
             Self::IoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             Self::JwtError(_) => StatusCode::FORBIDDEN,

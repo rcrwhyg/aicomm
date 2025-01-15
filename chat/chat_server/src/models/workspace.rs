@@ -1,6 +1,5 @@
-use chat_core::Workspace;
-
 use crate::{AppError, AppState};
+use chat_core::Workspace;
 
 impl AppState {
     pub async fn create_workspace(&self, name: &str, user_id: u64) -> Result<Workspace, AppError> {
@@ -75,9 +74,8 @@ impl AppState {
 
 #[cfg(test)]
 mod tests {
-    use crate::models::CreateUser;
-
     use super::*;
+    use crate::models::CreateUser;
     use anyhow::Result;
 
     #[tokio::test]
@@ -88,9 +86,9 @@ mod tests {
         assert_eq!(ws.name, "test");
 
         let email = "rcrwhyg@sina.com";
-        let full_name = "Lyn Wong";
+        let fullname = "Lyn Wong";
         let password = "hunter42";
-        let input = CreateUser::new(&ws.name, email, full_name, password);
+        let input = CreateUser::new(&ws.name, email, fullname, password);
         let user = state.create_user(&input).await?;
 
         assert_eq!(user.ws_id, ws.id);
@@ -122,14 +120,14 @@ mod tests {
         let ws = state.create_workspace("test", 0).await?;
 
         let email = "rcrwhyg@sina.com";
-        let full_name = "Lyn Wong";
+        let fullname = "Lyn Wong";
         let password = "hunter42";
-        let input = CreateUser::new(&ws.name, email, full_name, password);
+        let input = CreateUser::new(&ws.name, email, fullname, password);
         let user1 = state.create_user(&input).await?;
 
         let email = "rcrwhyg2@sina.com";
-        let full_name = "Lyn Wong2";
-        let input = CreateUser::new(&ws.name, email, full_name, password);
+        let fullname = "Lyn Wong2";
+        let input = CreateUser::new(&ws.name, email, fullname, password);
         let user2 = state.create_user(&input).await?;
 
         let users = state.fetch_chat_users(ws.id as _).await?;

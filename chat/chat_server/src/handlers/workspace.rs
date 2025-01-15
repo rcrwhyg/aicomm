@@ -1,7 +1,6 @@
+use crate::{AppError, AppState};
 use axum::{extract::State, response::IntoResponse, Extension, Json};
 use chat_core::{ChatUser, User};
-
-use crate::{AppError, AppState};
 
 /// List all users in the workspace.
 #[utoipa::path(

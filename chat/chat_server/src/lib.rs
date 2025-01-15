@@ -30,7 +30,7 @@ pub use models::*;
 
 #[derive(Debug, Clone)]
 pub struct AppState {
-    pub(crate) inner: Arc<AppStateInner>,
+    inner: Arc<AppStateInner>,
 }
 
 #[allow(unused)]
@@ -155,7 +155,6 @@ mod test_util {
                     pool,
                 }),
             };
-
             Ok((tdb, state))
         }
     }

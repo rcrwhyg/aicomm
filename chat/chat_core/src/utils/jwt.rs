@@ -1,6 +1,5 @@
-use jwt_simple::prelude::*;
-
 use crate::User;
+use jwt_simple::prelude::*;
 
 const JWT_DURATION: u64 = 60 * 60 * 24 * 7;
 const JWT_ISSUER: &str = "chat_server";
@@ -33,10 +32,6 @@ impl DecodingKey {
 
     #[allow(unused)]
     pub fn verify(&self, token: &str) -> Result<User, jwt_simple::Error> {
-        // let mut options = VerificationOptions::default();
-        // options.allowed_issuers = Some(HashSet::from_strings(&[JWT_ISSUER]));
-        // options.allowed_audiences = Some(HashSet::from_strings(&[JWT_AUDIENCE]));
-
         let options = VerificationOptions {
             allowed_issuers: Some(HashSet::from_strings(&[JWT_ISSUER])),
             allowed_audiences: Some(HashSet::from_strings(&[JWT_AUDIENCE])),
@@ -50,13 +45,11 @@ impl DecodingKey {
 
 #[cfg(test)]
 mod tests {
-
+    use super::*;
     use anyhow::Result;
 
-    use super::*;
-
-    #[test]
-    fn jwt_sign_verify_should_work() -> Result<()> {
+    #[tokio::test]
+    async fn jwt_sign_verify_should_work() -> Result<()> {
         // openssl genpkey -algorithm ed25519 -out private.pem
         let encoding_pem = include_str!("../../fixtures/private.pem");
         // openssl pkey -in private.pem -pubout -out public.pem
@@ -64,10 +57,9 @@ mod tests {
         let ek = EncodingKey::load(encoding_pem)?;
         let dk = DecodingKey::load(decoding_pem)?;
 
-        let user = User::new(1, "alon", "alon@gmail.com");
+        let user = User::new(1, "Tyr Chen", "tchen@acme.org");
 
         let token = ek.sign(user.clone())?;
-        // assert_eq!(token, "");
         let user2 = dk.verify(&token)?;
         assert_eq!(user, user2);
 

@@ -1,8 +1,7 @@
+use crate::{models::SigninUser, AppError, AppState, CreateUser, ErrorOutput};
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-
-use crate::{models::SigninUser, AppError, AppState, CreateUser, ErrorOutput};
 
 #[derive(Debug, ToSchema, Serialize, Deserialize)]
 pub struct AuthOutput {
@@ -27,9 +26,6 @@ pub(crate) async fn signup_handler(
 ) -> Result<impl IntoResponse, AppError> {
     let user = state.create_user(&input).await?;
     let token = state.ek.sign(user)?;
-    // let mut header = HeaderMap::new();
-    // header.insert("X-Token", HeaderValue::from_str(&token)?);
-    // Ok((StatusCode::CREATED, header))
     let body = Json(AuthOutput { token });
     Ok((StatusCode::CREATED, body))
 }
@@ -63,7 +59,6 @@ pub(crate) async fn signin_handler(
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use anyhow::Result;
     use http_body_util::BodyExt as _;

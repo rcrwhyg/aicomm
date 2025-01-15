@@ -1,9 +1,8 @@
+use crate::{AppError, AppState, ChatFile};
 use chat_core::Message;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use utoipa::{IntoParams, ToSchema};
-
-use crate::{AppError, AppState, ChatFile};
 
 #[derive(Debug, Clone, ToSchema, Serialize, Deserialize)]
 pub struct CreateMessage {
@@ -52,13 +51,13 @@ impl AppState {
             r#"
             INSERT INTO messages (chat_id, sender_id, content, files)
             VALUES ($1, $2, $3, $4)
-            RETURNING id, chat_id, sender_id, content, files, created_at
+            RETURNING id, chat_id, sender_id, content, modified_content, files, created_at
             "#,
         )
         .bind(chat_id as i64)
         .bind(user_id as i64)
         .bind(input.content)
-        .bind(input.files)
+        .bind(&input.files)
         .fetch_one(&self.pool)
         .await?;
 
@@ -79,7 +78,7 @@ impl AppState {
 
         let messages: Vec<Message> = sqlx::query_as(
             r#"
-            SELECT id, chat_id, sender_id, content, files, created_at
+            SELECT id, chat_id, sender_id, content, modified_content, files, created_at
             FROM messages
             WHERE chat_id = $1 AND id < $2
             ORDER BY id DESC
@@ -123,7 +122,7 @@ mod tests {
         };
         assert!(state.create_message(input, 1, 1).await.is_err());
 
-        // invalid files should work
+        // valid files should work
         let url = upload_dummy_file(&state)?;
         let input = CreateMessage {
             content: "Hello World".to_string(),

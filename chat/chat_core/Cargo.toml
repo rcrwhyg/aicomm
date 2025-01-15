@@ -11,10 +11,12 @@ axum-extra = { workspace = true }
 chrono = { workspace = true }
 jwt-simple = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 sqlx = { workspace = true }
+thiserror = { workspace = true }
 tokio = { workspace = true }
 tower = { workspace = true }
 tower-http = { workspace = true }
 tracing = { workspace = true }
-utoipa = { version = "5.0.0", features = ["axum_extras", "chrono"] }
-uuid = { version = "1.10.0", features = ["v7", "serde"] }
+utoipa = { version = "5.3.0", features = ["axum_extras", "chrono"] }
+uuid = { version = "1.11.0", features = ["v7", "serde"] }

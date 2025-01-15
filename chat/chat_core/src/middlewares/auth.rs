@@ -1,3 +1,4 @@
+use super::TokenVerify;
 use axum::{
     extract::{FromRequestParts, Query, Request, State},
     http::StatusCode,
@@ -10,8 +11,6 @@ use axum_extra::{
 };
 use serde::Deserialize;
 use tracing::warn;
-
-use super::TokenVerify;
 
 #[derive(Debug, Deserialize)]
 struct Params {
@@ -63,14 +62,11 @@ where
 
 #[cfg(test)]
 mod tests {
-
-    use std::sync::Arc;
-
-    use crate::{DecodingKey, EncodingKey, User};
-
     use super::*;
+    use crate::{DecodingKey, EncodingKey, User};
     use anyhow::Result;
     use axum::{body::Body, middleware::from_fn_with_state, routing::get, Router};
+    use std::sync::Arc;
     use tower::ServiceExt;
 
     #[derive(Clone)]
@@ -101,7 +97,7 @@ mod tests {
         let dk = DecodingKey::load(decoding_pem)?;
         let state = AppState(Arc::new(AppStateInner { ek, dk }));
 
-        let user = User::new(1, "test@example.com", "password");
+        let user = User::new(1, "Tyr Chen", "tchen@acme.org");
         let token = state.0.ek.sign(user)?;
 
         let app = Router::new()
@@ -132,7 +128,7 @@ mod tests {
         // bad token
         let req = Request::builder()
             .uri("/")
-            .header("Authorization", "Bearer bad token")
+            .header("Authorization", "Bearer bad-token")
             .body(Body::empty())?;
         let resp = app.clone().oneshot(req).await?;
         assert_eq!(resp.status(), StatusCode::FORBIDDEN);

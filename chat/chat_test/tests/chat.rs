@@ -1,5 +1,3 @@
-use std::{net::SocketAddr, time::Duration};
-
 use anyhow::Result;
 use chat_core::{Chat, ChatType, Message};
 use chat_server::AppState;
@@ -11,7 +9,24 @@ use reqwest::{
 use reqwest_eventsource::{Event, EventSource};
 use serde::Deserialize;
 use serde_json::json;
+use std::{net::SocketAddr, time::Duration};
 use tokio::{net::TcpListener, time::sleep};
+
+/*
+test1:
+    name: user 1 create chat
+    steps:
+        - signin
+            email: tchen@acme.org
+            password: 123456
+        - create_chat
+            name: test
+            members: [1, 2]
+        - create_message
+            chat_id: 1
+            content: hello
+            files: [Cargo.toml]
+*/
 
 #[derive(Debug, Deserialize)]
 struct AuthToken {

@@ -44,7 +44,7 @@ pub async fn get_router(config: AppConfig) -> Result<Router> {
 
     let cors = CorsLayer::new()
         // allow `GET` and `POST` requests when accessing the resource
-        .allow_methods(vec![
+        .allow_methods([
             Method::GET,
             Method::POST,
             Method::PATCH,

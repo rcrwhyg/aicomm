@@ -1,7 +1,6 @@
-use std::{env, fs::File};
-
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
+use std::{env, fs::File};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AppConfig {

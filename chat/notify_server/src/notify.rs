@@ -1,13 +1,12 @@
 use std::{collections::HashSet, sync::Arc};
 
+use crate::AppState;
 use anyhow::Result;
 use chat_core::{Chat, Message};
+use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgListener;
-use tokio_stream::StreamExt;
 use tracing::{info, warn};
-
-use crate::AppState;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "event")]
@@ -25,6 +24,7 @@ struct Notification {
     event: Arc<AppEvent>,
 }
 
+// pg_notify('chat_updated', json_build_object('op', TG_OP, 'old', OLD, 'new', NEW)::text);
 #[derive(Debug, Serialize, Deserialize)]
 struct ChatUpdated {
     op: String,
@@ -32,9 +32,9 @@ struct ChatUpdated {
     new: Option<Chat>,
 }
 
+// pg_notify('chat_message_created', row_to_json(NEW)::text);
 #[derive(Debug, Serialize, Deserialize)]
 struct ChatMessageCreated {
-    #[serde(flatten)]
     message: Message,
     members: Vec<u64>,
 }
@@ -47,9 +47,9 @@ pub async fn setup_pg_listener(state: AppState) -> Result<()> {
     let mut stream = listener.into_stream();
 
     tokio::spawn(async move {
-        while let Some(Ok(notif)) = stream.next().await {
-            info!("Got notification: {:?}", notif);
-            let notification = Notification::load(notif.channel(), notif.payload())?;
+        while let Some(Ok(notify)) = stream.next().await {
+            info!("Received notification: {:?}", notify);
+            let notification = Notification::load(notify.channel(), notify.payload())?;
             let users = &state.users;
             for user_id in notification.user_ids {
                 if let Some(tx) = users.get(&user_id) {
@@ -71,15 +71,13 @@ impl Notification {
         match r#type {
             "chat_updated" => {
                 let payload = serde_json::from_str::<ChatUpdated>(payload)?;
-                info!("Got chat updated notification: {:?}", payload);
+                info!("Chat updated: {:?}", payload);
                 let user_ids =
                     get_affected_chat_user_ids(payload.old.as_ref(), payload.new.as_ref());
                 let event = match payload.op.as_str() {
-                    "INSERT" => AppEvent::NewChat(payload.new.expect("new should be present")),
-                    "UPDATE" => AppEvent::AddToChat(payload.old.expect("new should be present")),
-                    "DELETE" => {
-                        AppEvent::RemoveFromChat(payload.old.expect("old should be present"))
-                    }
+                    "INSERT" => AppEvent::NewChat(payload.new.expect("new should exist")),
+                    "UPDATE" => AppEvent::AddToChat(payload.old.expect("new should exist")),
+                    "DELETE" => AppEvent::RemoveFromChat(payload.old.expect("old should exist")),
                     _ => return Err(anyhow::anyhow!("Invalid operation")),
                 };
                 Ok(Self {
@@ -104,7 +102,7 @@ fn get_affected_chat_user_ids(old: Option<&Chat>, new: Option<&Chat>) -> HashSet
     match (old, new) {
         (Some(old), Some(new)) => {
             // diff old/new members, if identical, no need to notify, otherwise notify the union of both
-            let old_members: HashSet<_> = old.members.iter().map(|v: &i64| *v as u64).collect();
+            let old_members: HashSet<_> = old.members.iter().map(|v| *v as u64).collect();
             let new_members: HashSet<_> = new.members.iter().map(|v| *v as u64).collect();
 
             if old_members == new_members {

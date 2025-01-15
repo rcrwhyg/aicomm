@@ -1,8 +1,7 @@
+use crate::{AppError, AppState};
 use chat_core::{Chat, ChatType};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-
-use crate::{AppError, AppState};
 
 #[derive(Debug, Clone, Default, ToSchema, Serialize, Deserialize)]
 pub struct CreateChat {
@@ -76,7 +75,7 @@ impl AppState {
             r#"
             INSERT INTO chats (ws_id, name, type, members)
             VALUES ($1, $2, $3, $4)
-            RETURNING id, ws_id, name, type, members, created_at
+            RETURNING id, ws_id, name, type, members, agents, created_at
             "#,
         )
         .bind(ws_id as i64)
@@ -92,7 +91,7 @@ impl AppState {
     pub async fn fetch_chats(&self, user_id: u64, ws_id: u64) -> Result<Vec<Chat>, AppError> {
         let chats = sqlx::query_as(
             r#"
-            SELECT id, ws_id, name, type, members, created_at
+            SELECT id, ws_id, name, type, members, agents, created_at
             FROM chats
             WHERE ws_id = $1 and $2 = ANY(members)
             "#,
@@ -108,7 +107,7 @@ impl AppState {
     pub async fn get_chat_by_id(&self, id: u64) -> Result<Option<Chat>, AppError> {
         let chat = sqlx::query_as(
             r#"
-            SELECT id, ws_id, name, type, members, created_at
+            SELECT id, ws_id, name, type, members, agents, created_at
             FROM chats
             WHERE id = $1
             "#,
@@ -170,7 +169,7 @@ impl AppState {
             UPDATE chats
             SET type = $1, name = $2, members = $3
             WHERE id = $4
-            RETURNING id, ws_id, name, type, members, created_at
+            RETURNING id, ws_id, name, type, members, agents, created_at
             "#,
         )
         .bind(input.r#type)
@@ -232,7 +231,6 @@ impl UpdateChat {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use anyhow::Result;
 
@@ -312,8 +310,10 @@ mod tests {
             .await
             .expect("Failed to create chat");
 
+        println!("chat1: {:?}", chat1);
         let update = UpdateChat::new(ChatType::Group, "test_update_group", &[1, 2, 3]);
         let chat2 = state.update_chat_by_id(chat1.id as _, update).await?;
+        println!("chat2: {:?}", chat2);
 
         assert_eq!(chat1.id, chat2.id);
         assert_eq!(chat2.name.unwrap(), "test_update_group");

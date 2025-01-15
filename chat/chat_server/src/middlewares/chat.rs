@@ -1,11 +1,10 @@
+use crate::{AppError, AppState};
 use axum::{
     extract::{FromRequestParts, Path, Request, State},
     middleware::Next,
     response::{IntoResponse, Response},
 };
 use chat_core::User;
-
-use crate::{AppError, AppState};
 
 pub async fn verify_chat(State(state): State<AppState>, req: Request, next: Next) -> Response {
     let (mut parts, body) = req.into_parts();
@@ -33,7 +32,6 @@ pub async fn verify_chat(State(state): State<AppState>, req: Request, next: Next
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use anyhow::Result;
     use axum::{

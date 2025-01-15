@@ -1,4 +1,5 @@
 ### signup user
+
 POST http://localhost:6688/api/signup
 Content-Type: application/json
 
@@ -10,6 +11,7 @@ Content-Type: application/json
 }
 
 ### signup user
+
 POST http://localhost:6688/api/signup
 Content-Type: application/json
 
@@ -21,6 +23,7 @@ Content-Type: application/json
 }
 
 ### signup user
+
 POST http://localhost:6688/api/signup
 Content-Type: application/json
 
@@ -31,7 +34,8 @@ Content-Type: application/json
     "password": "123456"
 }
 
-### signin user (valid)
+### signin user (invalid)
+
 POST http://localhost:6688/api/signin
 Content-Type: application/json
 
@@ -40,7 +44,8 @@ Content-Type: application/json
     "password": "a123456"
 }
 
-### signin user
+### signin user (valid)
+
 # @name signin
 POST http://localhost:6688/api/signin
 Content-Type: application/json
@@ -52,7 +57,8 @@ Content-Type: application/json
 
 @token = {{signin.response.body.token}}
 
-### signin user
+### signin user (valid)
+
 # @name signin1
 POST http://localhost:6688/api/signin
 Content-Type: application/json
@@ -85,7 +91,7 @@ Authorization: Bearer {{token}}
     "public": false
 }
 
-### create chat without me
+### create chats without me
 POST http://localhost:6688/api/chats
 Content-Type: application/json
 Authorization: Bearer {{token1}}
@@ -106,43 +112,29 @@ Authorization: Bearer {{token1}}
     "public": false
 }
 
+
 ### get chat list
+
 GET http://localhost:6688/api/chats
 Authorization: Bearer {{token}}
 
 ### get user list
+
 GET http://localhost:6688/api/users
 Authorization: Bearer {{token}}
 
 
-### update chat
-PATCH http://localhost:6688/api/chats/1
-Content-Type: application/json
-Authorization: Bearer {{token}}
-
-{
-    "type": "Group",
-    "name": "acme-updated",
-    "members": [1, 2, 3]
-}
-
-### delete chat
-DELETE http://localhost:6688/api/chats/1
-Content-Type: application/json
-Authorization: Bearer {{token}}
-
 ### upload files
+
 POST http://localhost:6688/api/upload
-Content-Type: multipart/form-data; boundary=MyBoundary
 Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=MyBoundary
 
 --MyBoundary
-# Content-Disposition: form-data; filename="006Mi9iRgy1gwj6z72ccdj30fm0feq56.jpg"
-Content-Disposition: form-data; filename="IMG_8812.jpeg"
+Content-Disposition: form-data; filename="xdiff1.png"
 Content-Type: application/octet-stream
 
-< C:\Users\velis\Desktop\biaoqingbao\006Mi9iRgy1gwj6z72ccdj30fm0feq56.jpg
-# < /Users/alon/Pictures/IMG_8812.jpeg
+< /Users/tchen/snapshots/xdiff1.png
 --MyBoundary
 Content-Disposition: form-data; filename="hello.txt"
 Content-Type: text/plain
@@ -150,22 +142,46 @@ Content-Type: text/plain
 Hello, World!
 --MyBoundary--
 
+
 ### get files
-# GET http://localhost:6688/api/files/1/08e/151/881c920d87e043aacb890479ae0bef522f.jpeg
-GET http://localhost:6688/api/files/1/dfb/d31/a22376042aef61b5df0c538dbc8f0031b9.jpeg
-# GET http://localhost:6688/api/files/1/0a0/a9f/2a6772942557ab5355d76af442f8f65e01.txt
+
+GET http://localhost:6688/api/files/1/339/807/e635afbeab088ce33206fdf4223a6bb156.png
 Authorization: Bearer {{token}}
 
+### get files with token
+
+GET http://localhost:6688/api/files/1/339/807/e635afbeab088ce33206fdf4223a6bb156.png?token={{token}}
 ### send a message
+
 POST http://localhost:6688/api/chats/1
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-    "content": "hello world",
+    "content": "Hello, World!",
     "files": []
 }
 
 ### get messages
+
 GET http://localhost:6688/api/chats/1/messages?limit=6&last_id=5
 Authorization: Bearer {{token}}
+
+
+### use cloudflare AI
+
+POST https://api.cloudflare.com/client/v4/accounts/{{cfAccount}}/ai/run/@cf/meta/llama-3-8b-instruct
+Authorization: Bearer {{cfToken}}
+
+{
+    "messages": [
+        {
+            "role": "system",
+            "content": "You are a friendly assistant that answers questions based on your knowledge. Your reply will be limited to 100 words. reply with simplified Chinese, unless the question asks for a specific language."
+        },
+        {
+            "role": "user",
+            "content": "中国上最长的河流是哪条？"
+        }
+    ]
+}

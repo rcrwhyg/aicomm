@@ -1,3 +1,7 @@
+use crate::handlers::*;
+use crate::{
+    AppState, CreateChat, CreateMessage, CreateUser, ErrorOutput, ListMessages, SigninUser,
+};
 use axum::Router;
 use chat_core::{Chat, ChatType, ChatUser, Message, User, Workspace};
 use utoipa::{
@@ -7,11 +11,6 @@ use utoipa::{
 use utoipa_rapidoc::RapiDoc;
 use utoipa_redoc::{Redoc, Servable};
 use utoipa_swagger_ui::SwaggerUi;
-
-use crate::handlers::*;
-use crate::{
-    AppState, CreateChat, CreateMessage, CreateUser, ErrorOutput, ListMessages, SigninUser,
-};
 
 pub(crate) trait OpenApiRouter {
     fn openapi(self) -> Self;
@@ -50,12 +49,7 @@ impl Modify for SecurityAddon {
         if let Some(component) = openapi.components.as_mut() {
             component.add_security_scheme(
                 "token",
-                SecurityScheme::Http(
-                    HttpBuilder::new()
-                        .scheme(HttpAuthScheme::Bearer)
-                        .bearer_format("JWT")
-                        .build(),
-                ),
+                SecurityScheme::Http(HttpBuilder::new().scheme(HttpAuthScheme::Bearer).build()),
             );
         };
     }
@@ -63,10 +57,8 @@ impl Modify for SecurityAddon {
 
 impl OpenApiRouter for Router<AppState> {
     fn openapi(self) -> Self {
-        self.merge(
-            SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi().clone()),
-        )
-        .merge(Redoc::with_url("/redoc", ApiDoc::openapi().clone()))
-        .merge(RapiDoc::new("/api-docs/openapi.json").path("/rapidoc"))
+        self.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
+            .merge(Redoc::with_url("/redoc", ApiDoc::openapi()))
+            .merge(RapiDoc::new("/api-docs/openapi.json").path("/rapidoc"))
     }
 }

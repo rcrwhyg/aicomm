@@ -2,14 +2,12 @@ mod auth;
 mod request_id;
 mod server_time;
 
-use core::fmt;
+use std::fmt;
 
 use crate::User;
 
-use self::request_id::set_request_id;
-
+use self::{request_id::set_request_id, server_time::ServerTimeLayer};
 use axum::{middleware::from_fn, Router};
-use server_time::ServerTimeLayer;
 use tower::ServiceBuilder;
 use tower_http::{
     compression::CompressionLayer,

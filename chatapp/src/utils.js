@@ -5,9 +5,11 @@ const SSE_URL = "http://localhost:6687/events";
 
 let config = null;
 try {
-  config = await invoke("read_config");
+  if (invoke) {
+    config = await invoke("get_config");
+  }
 } catch (error) {
-  console.error("Error reading config:", error);
+  console.warn("failed to get config: fallback");
 }
 
 const getUrlBase = () => {
@@ -24,29 +26,52 @@ const getSseBase = () => {
   return SSE_URL;
 };
 
-const initSse = (store) => {
+const initSSE = (store) => {
   let sse_base = getSseBase();
   let url = `${sse_base}?token=${store.state.token}`;
-  const eventSource = new EventSource(url);
+  const sse = new EventSource(url);
 
-  eventSource.addEventListener("NewMessage", (event) => {
-    let data = JSON.parse(event.data);
-    console.log("NewMessage: ", event.data);
+  sse.addEventListener("NewMessage", (e) => {
+    let data = JSON.parse(e.data);
+    console.log("message:", e.data);
     delete data.event;
     store.commit("addMessage", { channelId: data.chatId, message: data });
   });
 
-  eventSource.onmessage = (event) => {
-    console.log("EventSource message:", event);
+  sse.onmessage = (event) => {
+    console.log("got event:", event);
     // const data = JSON.parse(event.data);
-    // store("addMessage", data);
-  };
-  eventSource.onerror = (error) => {
-    console.error("EventSource failed:", error);
-    eventSource.close();
+    // commit('addMessage', data);
   };
 
-  return eventSource;
+  sse.onerror = (error) => {
+    console.error("EventSource failed:", error);
+    sse.close();
+  };
+
+  return sse;
 };
 
-export { getUrlBase, initSse };
+export { getUrlBase, initSSE };
+
+export function formatMessageDate(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+  const timeString = date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  if (diffDays === 0) {
+    return timeString;
+  } else if (diffDays < 30) {
+    return `${timeString}, ${diffDays} ${diffDays === 1 ? "day" : "days"} ago`;
+  } else {
+    return `${timeString}, ${date.toLocaleDateString([], {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })}`;
+  }
+}

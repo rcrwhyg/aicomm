@@ -19,16 +19,16 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-anyhow = "1.0.94"
+anyhow = "1.0.95"
 arc-swap = "1.7.1"
-config = { version = "0.14.1", default-features = false, features = ["yaml"] }
+config = { version = "0.15.4", default-features = false, features = ["yaml"] }
 dirs = "5.0.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri = { version = "2", features = ["tray-icon"] }
-tauri-plugin-clipboard-manager = "2.0.2"
-tauri-plugin-log = { version = "2.0.3", features = ["colored"] }
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-log = { version = "2", features = ["colored"] }
 tauri-plugin-shell = "2"
-tauri-plugin-window-state = "2.0.2"
-tokio = { version = "1.41.1", features = ["rt", "rt-multi-thread", "macros"] }
+tauri-plugin-window-state = "2"
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
 tracing = { version = "0.1.41", features = ["log"] }

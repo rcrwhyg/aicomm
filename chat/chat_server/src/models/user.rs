@@ -1,19 +1,18 @@
+use crate::{AppError, AppState};
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHasher, PasswordVerifier, SaltString},
-    Argon2, PasswordHash,
+    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+    Argon2,
 };
 use chat_core::{ChatUser, User};
 use serde::{Deserialize, Serialize};
 use std::mem;
 use utoipa::ToSchema;
 
-use crate::{AppError, AppState};
-
 /// create a user with email and password
 #[derive(Debug, Clone, ToSchema, Serialize, Deserialize)]
 pub struct CreateUser {
     /// Full name of the user
-    pub full_name: String,
+    pub fullname: String,
     /// Email of the user
     pub email: String,
     /// Workspace name - if not exists, create one
@@ -33,7 +32,7 @@ impl AppState {
     /// Find a user by email
     pub async fn find_user_by_email(&self, email: &str) -> Result<Option<User>, AppError> {
         let user = sqlx::query_as(
-            "SELECT id, ws_id, full_name, email, created_at FROM users WHERE email = $1",
+            "SELECT id, ws_id, fullname, email, created_at FROM users WHERE email = $1",
         )
         .bind(email)
         .fetch_optional(&self.pool)
@@ -45,7 +44,7 @@ impl AppState {
     /// Find a user by id
     pub async fn find_user_by_id(&self, id: i64) -> Result<Option<User>, AppError> {
         let user = sqlx::query_as(
-            "SELECT id, ws_id, full_name, email, created_at FROM users WHERE id = $1",
+            "SELECT id, ws_id, fullname, email, created_at FROM users WHERE id = $1",
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -72,14 +71,14 @@ impl AppState {
         let password_hash = hash_password(&input.password)?;
         let mut user: User = sqlx::query_as(
             r#"
-            INSERT INTO users (ws_id, email, full_name, password_hash)
+            INSERT INTO users (ws_id, email, fullname, password_hash)
             VALUES ($1, $2, $3, $4)
-            RETURNING id, ws_id, full_name, email, created_at
+            RETURNING id, ws_id, fullname, email, created_at
             "#,
         )
         .bind(ws.id)
         .bind(&input.email)
-        .bind(&input.full_name)
+        .bind(&input.fullname)
         .bind(password_hash)
         .fetch_one(&self.pool)
         .await?;
@@ -97,7 +96,7 @@ impl AppState {
     /// Verify email and password
     pub async fn verify_user(&self, input: &SigninUser) -> Result<Option<User>, AppError> {
         let user: Option<User> = sqlx::query_as(
-            "SELECT id, ws_id, full_name, email, password_hash, created_at FROM users WHERE email = $1",
+            "SELECT id, ws_id, fullname, email, password_hash, created_at FROM users WHERE email = $1",
         )
         .bind(&input.email)
         .fetch_optional(&self.pool)
@@ -124,7 +123,7 @@ impl AppState {
     pub async fn fetch_chat_users_by_ids(&self, ids: &[i64]) -> Result<Vec<ChatUser>, AppError> {
         let users = sqlx::query_as(
             r#"
-            SELECT id, full_name, email
+            SELECT id, fullname, email
             FROM users
             WHERE id = ANY($1)
             "#,
@@ -139,7 +138,7 @@ impl AppState {
     pub async fn fetch_chat_users(&self, ws_id: u64) -> Result<Vec<ChatUser>, AppError> {
         let users = sqlx::query_as(
             r#"
-            SELECT id, full_name, email
+            SELECT id, fullname, email
             FROM users
             WHERE ws_id = $1
             "#,
@@ -180,10 +179,10 @@ fn verify_password(password: &str, password_hash: &str) -> Result<bool, AppError
 
 #[cfg(test)]
 impl CreateUser {
-    pub fn new(ws: &str, email: &str, full_name: &str, password: &str) -> Self {
+    pub fn new(ws: &str, email: &str, fullname: &str, password: &str) -> Self {
         Self {
             email: email.to_string(),
-            full_name: full_name.to_string(),
+            fullname: fullname.to_string(),
             workspace: ws.to_string(),
             password: password.to_string(),
         }
@@ -202,7 +201,6 @@ impl SigninUser {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use anyhow::Result;
 
@@ -220,9 +218,9 @@ mod tests {
         let (_tdb, state) = AppState::try_new_for_test().await?;
 
         let email = "tchen@acme.org";
-        let full_name = "Tyr Chen";
+        let fullname = "Tyr Chen";
         let password = "hunter42";
-        let input = CreateUser::new("Default Workspace", email, full_name, password);
+        let input = CreateUser::new("Default Workspace", email, fullname, password);
 
         let ret = state.create_user(&input).await;
         match ret {
@@ -242,19 +240,19 @@ mod tests {
         let (_tdb, state) = AppState::try_new_for_test().await?;
 
         let email = "rcrwhyg@sina.com";
-        let full_name = "Lyn Wong";
+        let fullname = "Lyn Wong";
         let password = "hunter42";
-        let input = CreateUser::new("Default Workspace", email, full_name, password);
+        let input = CreateUser::new("Default Workspace", email, fullname, password);
         let user = state.create_user(&input).await?;
         assert_eq!(user.email, email);
-        assert_eq!(user.full_name, full_name);
+        assert_eq!(user.fullname, fullname);
         assert!(user.id > 0);
 
         let user = state.find_user_by_email(email).await?;
         assert!(user.is_some());
         let user = user.unwrap();
         assert_eq!(user.email, email);
-        assert_eq!(user.full_name, full_name);
+        assert_eq!(user.fullname, fullname);
 
         let input = SigninUser::new(email, password);
         assert!(state.verify_user(&input).await?.is_some());

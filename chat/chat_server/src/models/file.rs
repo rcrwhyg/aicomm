@@ -3,11 +3,8 @@ use std::{
     str::FromStr,
 };
 
+use crate::{AppError, ChatFile};
 use sha1::{Digest, Sha1};
-
-use crate::AppError;
-
-use super::ChatFile;
 
 impl ChatFile {
     pub fn new(ws_id: u64, filename: &str, data: &[u8]) -> Self {
@@ -46,7 +43,7 @@ impl FromStr for ChatFile {
             return Err(AppError::ChatFileError(format!("Invalid file path: {}", s)));
         };
 
-        let parts: Vec<_> = s.split("/").collect();
+        let parts: Vec<&str> = s.split("/").collect();
         if parts.len() != 4 {
             return Err(AppError::ChatFileError(format!("Invalid file path: {}", s)));
         }
@@ -54,7 +51,7 @@ impl FromStr for ChatFile {
         let Ok(ws_id) = parts[0].parse::<u64>() else {
             return Err(AppError::ChatFileError(format!(
                 "Invalid workspace id: {}",
-                parts[0]
+                parts[1]
             )));
         };
 
